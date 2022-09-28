@@ -11,7 +11,7 @@ tiny_fn! {
 pub struct Task {
     fun: TaskFun<'static>,
     inner: Option<*mut Inner<()>>,
-    drop: fn(*mut Inner<()>)
+    abort: fn(*mut Inner<()>)
 }
 
 impl Task {
@@ -28,12 +28,12 @@ impl Task {
                 });
             }),
             inner: ptr.map(|inner| inner as *mut Inner<()>),
-            drop: drop::<R::Output>
+            abort
         }
     }
 
     pub fn abort(mut self) {
-        self.inner.take().map(|ptr| (self.drop)(ptr));
+        self.inner.take().map(|ptr| (self.abort)(ptr));
     }
 
     pub fn run(self) {
@@ -50,6 +50,6 @@ unsafe fn set_result<T>(ptr: *mut Inner<T>, result: Result<T>) {
     inner.notifier.take().map(|notifier| notifier.notify());
 }
 
-fn drop<T>(ptr: *mut Inner<()>) {
+fn abort<T>(ptr: *mut Inner<()>) {
     unsafe { set_result(ptr as *mut Inner<T>, Err(Error::Aborted)); }
 }
