@@ -13,7 +13,7 @@ pub struct Handle {
 
 impl Handle {
     pub fn current() -> Self {
-        Self::try_current().unwrap()
+        Self::try_current().expect("Not inside of a worker pool context")
     }
 
     pub fn try_current() -> Option<Self> {
