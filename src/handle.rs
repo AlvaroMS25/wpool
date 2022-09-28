@@ -51,4 +51,12 @@ impl Handle {
     pub fn shutdown(self) {
         self.core.shutdown();
     }
+
+    pub fn enter_context(&self) {
+        if crate::context::try_get().is_some() {
+            panic!("Already inside the context of a worker pool");
+        }
+
+        crate::context::set(self.clone());
+    }
 }
