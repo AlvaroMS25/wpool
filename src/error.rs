@@ -3,7 +3,7 @@ use std::any::Any;
 #[derive(Debug)]
 pub enum Error {
     Panicked(Box<dyn Any + Send + 'static>),
-    Dropped
+    Aborted
 }
 
 impl From<Box<dyn Any + Send + 'static>> for Error {

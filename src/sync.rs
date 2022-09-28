@@ -51,5 +51,5 @@ unsafe fn set_result<T>(ptr: *mut Inner<T>, result: Result<T>) {
 }
 
 fn drop<T>(ptr: *mut Inner<()>) {
-    unsafe { set_result(ptr as *mut Inner<T>, Err(Error::Dropped)); }
+    unsafe { set_result(ptr as *mut Inner<T>, Err(Error::Aborted)); }
 }
