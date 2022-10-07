@@ -3,6 +3,12 @@ use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
 
 
+/// A handle used to retrieve the output of a task.
+///
+/// The output can be waited synchronously by using [`wait`] or the handle can be `.await`ed
+/// to wait for the result asynchronously.
+///
+/// [`wait`]: JoinHandle::wait
 #[must_use = "If you don't want the result, use spawn_detached."]
 pub struct JoinHandle<T> {
     pub(crate) inner: Waiter<T>
@@ -11,6 +17,7 @@ pub struct JoinHandle<T> {
 unsafe impl<T> Send for JoinHandle<T> {}
 
 impl<T> JoinHandle<T> {
+    /// Waits for the result synchronously.
     pub fn wait(mut self) -> Result<T> {
         self.inner.wait()
     }
