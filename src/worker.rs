@@ -41,7 +41,7 @@ impl Worker {
 
     fn try_schedule_periodical(&self) -> bool {
         if let Some(mut lock) = self.core.timer.try_lock() {
-            lock.schedule_available(&self.core.driver.queue);
+            lock.schedule_available(&self.core.condvar, &self.core.driver.queue);
             true
         } else {
             false
