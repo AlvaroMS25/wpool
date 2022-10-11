@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::Duration;
 use crate::core::Core;
@@ -73,11 +74,20 @@ impl Handle {
     /// [`spawn`]: crate::spawn
     /// [`spawn_detached`]: crate::spawn_detached
     /// [`spawn_periodic`]: crate::spawn_periodic
-    pub fn enter_context(&self) {
+    pub fn enter_context(&self) -> ContextGuard {
         if crate::context::try_get().is_some() {
             panic!("Already inside the context of a worker pool");
         }
 
         crate::context::set(self.clone());
+        ContextGuard(PhantomData)
+    }
+}
+
+pub struct ContextGuard<'a>(PhantomData<&'a Handle>);
+
+impl Drop for ContextGuard<'_> {
+    fn drop(&mut self) {
+        crate::context::clear();
     }
 }
