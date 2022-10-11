@@ -74,7 +74,7 @@ impl WorkerPoolBuilder {
     }
 
     /// Builds and starts the pool consuming the builder.
-    pub fn launch_owned(self) -> io::Result<Handle> {
+    pub fn build_owned(self) -> io::Result<Handle> {
         let mut handles = Vec::new();
         let core = Arc::new(Core::new(self.hooks));
 
@@ -97,9 +97,9 @@ impl WorkerPoolBuilder {
     }
 
     /// Builds and starts the pool without taking ownership of the builder
-    pub fn launch(&mut self) -> io::Result<Handle> {
+    pub fn build(&mut self) -> io::Result<Handle> {
         let this = std::mem::replace(self, Self::new());
-        this.launch_owned()
+        this.build_owned()
     }
 
 }

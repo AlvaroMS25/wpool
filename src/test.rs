@@ -4,7 +4,7 @@ use super::*;
 #[test]
 fn hello_world() {
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     spawn(|| {
         println!("Hello world");
@@ -16,7 +16,7 @@ fn wait() {
     use std::{thread, time::Duration};
 
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     let handle = spawn(|| {
         thread::sleep(Duration::from_millis(500));
@@ -29,7 +29,7 @@ fn wait() {
 #[test]
 fn detached() {
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     spawn_detached(|| {
         println!("Detached detached task");
@@ -41,7 +41,7 @@ fn spawn_inside() {
     use std::{thread, time::Duration};
 
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     spawn_detached(|| spawn_detached(|| {
         println!("{}", 2+2);
@@ -51,7 +51,7 @@ fn spawn_inside() {
 #[tokio::test]
 async fn wait_async() {
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     let result = spawn(|| 1).await.unwrap();
     println!("{}", result);
@@ -60,7 +60,7 @@ async fn wait_async() {
 #[test]
 fn periodical() {
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     spawn_periodic(|| {
         println!("Periodical running");
@@ -72,7 +72,7 @@ fn periodical() {
 #[test]
 fn combine() {
     WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     spawn_periodic(|| {
         println!("Periodic");
@@ -89,7 +89,7 @@ fn combine() {
 #[test]
 fn shutdown() {
     let handle = WorkerPoolBuilder::new()
-        .threads(1).launch().unwrap();
+        .threads(1).build().unwrap();
 
     spawn_detached(|| {
         std::thread::sleep(std::time::Duration::from_secs(3));
@@ -108,7 +108,7 @@ fn shutdown() {
 #[should_panic]
 fn shutdown_spawn() {
     let handle = WorkerPoolBuilder::new()
-        .launch_owned().unwrap();
+        .build_owned().unwrap();
 
     handle.clone().shutdown();
     handle.spawn_detached(|| {
