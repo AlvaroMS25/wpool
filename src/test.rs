@@ -6,7 +6,7 @@ fn hello_world() {
     WorkerPoolBuilder::new()
         .build_owned().unwrap();
 
-    spawn(|| {
+    spawn_detached(|| {
         println!("Hello world");
     });
 }
@@ -38,8 +38,6 @@ fn detached() {
 
 #[test]
 fn spawn_inside() {
-    use std::{thread, time::Duration};
-
     WorkerPoolBuilder::new()
         .build_owned().unwrap();
 
@@ -121,8 +119,8 @@ fn use_context_guard() {
     let handle = WorkerPoolBuilder::new().build_owned().unwrap();
     std::thread::spawn(move || {
         let _guard = handle.enter_context();
-        crate::spawn(|| unreachable!());
-    }).join();
+        crate::spawn_detached(|| unreachable!());
+    }).join().unwrap();
 }
 
 #[test]
@@ -130,8 +128,8 @@ fn forget_guard() {
     let handle = WorkerPoolBuilder::new().build_owned().unwrap();
     std::thread::spawn(move || {
         std::mem::forget(handle.enter_context());
-        crate::spawn(|| unreachable!());
-    }).join();
+        crate::spawn_detached(|| unreachable!());
+    }).join().unwrap();
 }
 
 #[test]
@@ -140,6 +138,6 @@ fn drop_context_guard() {
     let handle = WorkerPoolBuilder::new().build_owned().unwrap();
     std::thread::spawn(move || {
         let _ = handle.enter_context();
-        crate::spawn(|| {});
-    }).join();
+        crate::spawn_detached(|| {});
+    }).join().unwrap();
 }
