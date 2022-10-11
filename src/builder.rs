@@ -76,7 +76,7 @@ impl WorkerPoolBuilder {
     /// Sets a function to execute before each task.
     pub fn before_task<F>(&mut self, fun: F) -> &mut Self
     where
-        F: Fn()
+        F: Fn() + Send + 'static
     {
         self.hooks.before_task = Some(HookFn::new(fun));
         self
@@ -85,7 +85,7 @@ impl WorkerPoolBuilder {
     /// Sets a function to execute after each task.
     pub fn after_task<F>(&mut self, fun: F) -> &mut Self
     where
-        F: Fn()
+        F: Fn() + Send + 'static
     {
         self.hooks.after_task = Some(HookFn::new(fun));
         self
