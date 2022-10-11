@@ -115,3 +115,31 @@ fn shutdown_spawn() {
         unreachable!();
     });
 }
+
+#[test]
+fn use_context_guard() {
+    let handle = WorkerPoolBuilder::new().build_owned().unwrap();
+    std::thread::spawn(move || {
+        let _guard = handle.enter_context();
+        crate::spawn(|| unreachable!());
+    }).join();
+}
+
+#[test]
+fn forget_guard() {
+    let handle = WorkerPoolBuilder::new().build_owned().unwrap();
+    std::thread::spawn(move || {
+        std::mem::forget(handle.enter_context());
+        crate::spawn(|| unreachable!());
+    }).join();
+}
+
+#[test]
+#[should_panic]
+fn drop_context_guard() {
+    let handle = WorkerPoolBuilder::new().build_owned().unwrap();
+    std::thread::spawn(move || {
+        let _ = handle.enter_context();
+        crate::spawn(|| {});
+    }).join();
+}
