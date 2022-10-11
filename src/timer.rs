@@ -5,6 +5,7 @@ use crate::sync::Task;
 use drain_filter_polyfill::VecExt;
 use parking_lot::Condvar;
 
+/// The queue of periodic task, the task here are scheduled at the main queue when needed.
 #[derive(Default)]
 pub struct Timer {
     pub waiting: Vec<PeriodicTask>,

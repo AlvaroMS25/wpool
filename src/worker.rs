@@ -31,7 +31,9 @@ impl Worker {
                 }
             }
             if let Some(task) = self.core.driver.queue.pop() {
+                self.core.hooks.before_task.as_ref().map(|fun| fun.call());
                 task.run();
+                self.core.hooks.after_task.as_ref().map(|fun| fun.call());
             }
         }
 

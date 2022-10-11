@@ -41,6 +41,7 @@ impl PeriodicTask {
     }
 
     pub fn reschedule(self) {
+        // SAFETY: We already hold an Arc, so the pointer must be valid and safe to dereference.
         unsafe { (&*Arc::as_ptr(&self.handle.core)).schedule_periodical(self); }
     }
 

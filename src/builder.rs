@@ -73,6 +73,24 @@ impl WorkerPoolBuilder {
         self
     }
 
+    /// Sets a function to execute before each task.
+    pub fn before_task<F>(&mut self, fun: F) -> &mut Self
+    where
+        F: Fn()
+    {
+        self.hooks.before_task = Some(HookFn::new(fun));
+        self
+    }
+
+    /// Sets a function to execute after each task.
+    pub fn after_task<F>(&mut self, fun: F) -> &mut Self
+    where
+        F: Fn()
+    {
+        self.hooks.after_task = Some(HookFn::new(fun));
+        self
+    }
+
     /// Builds and starts the pool consuming the builder.
     pub fn build_owned(self) -> io::Result<Handle> {
         let mut handles = Vec::new();

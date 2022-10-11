@@ -16,6 +16,7 @@ impl Either<Task, PeriodicTask> {
     }
 }
 
+/// The main queue of the pool, all task stored here will be executed by worker threads.
 #[derive(Default)]
 pub struct Driver {
     pub queue: SegQueue<Either<Task, PeriodicTask>>,

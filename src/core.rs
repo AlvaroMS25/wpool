@@ -6,14 +6,22 @@ use parking_lot::{Condvar, Mutex};
 use crate::periodic::PeriodicTask;
 use crate::sync::Task;
 
+/// The core shared among all worker threads and handles.
 #[derive(Default)]
 pub struct Core {
+    /// The queue of tasks of the pool.
     pub driver: Driver,
+    /// The hooks the pool has.
     pub hooks: Hooks,
+    /// The timer used to store periodic tasks that are not ready to run.
     pub timer: Mutex<Timer>,
+    /// A mutex used along with the condvar to put to sleep the threads.
     pub mutex: Mutex<()>,
+    /// The condvar used along the mutex to put to sleep the threads.
     pub condvar: Condvar,
+    /// The handles of the worker threads
     pub handles: Mutex<Vec<JoinHandle<()>>>,
+    /// Whether the pool should exit or not.
     pub exit: bool
 }
 
@@ -51,6 +59,9 @@ impl Core {
         crate::context::clear();
         let mut lock = self.handles.lock();
 
+        // SAFETY: The Core struct cannot be accessed directly, to use this method a Handle
+        // instance must be consumed, and since we assert the pool is running before doing anything
+        // there is no possibility of a data race here.
         unsafe {
             let this = &mut *(self as *const Self as *mut Self);
             this.exit = true;
