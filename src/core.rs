@@ -55,6 +55,7 @@ impl Core {
     }
 
     pub fn shutdown(&self) {
+        self.assert_running();
         self.driver.clear();
         crate::context::clear();
         let mut lock = self.handles.lock();
