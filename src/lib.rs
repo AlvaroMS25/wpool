@@ -18,6 +18,14 @@ mod worker;
 #[cfg(test)]
 mod test;
 
+pub mod prelude {
+    pub use crate::{
+        builder::WorkerPoolBuilder,
+        error::Error,
+        handle::Handle
+    };
+}
+
 use std::time::Duration;
 use join::JoinHandle;
 use runnable::Runnable;
