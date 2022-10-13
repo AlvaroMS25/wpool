@@ -10,6 +10,7 @@ mod hook;
 pub mod join;
 mod periodic;
 pub mod runnable;
+mod scope;
 mod sync;
 mod timer;
 mod wait;

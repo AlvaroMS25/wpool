@@ -1,7 +1,9 @@
 use crate::wait::Waiter;
 use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
+use std::cell::UnsafeCell;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use crate::scope::Scope;
 
 
@@ -39,12 +41,14 @@ impl<T> Future for JoinHandle<T> {
 }
 
 pub struct ScopedJoinHandle<'scope, T> {
-    pub(crate) join: JoinHandle<T>,
-    pub(crate) scope: &'scope Scope<'scope>
+    pub(crate) join: JoinHandle<()>,
+    pub(crate) scope: &'scope Scope<'scope>,
+    pub(crate) cell: Arc<UnsafeCell<Option<T>>>
 }
 
-impl<T> ScopedJoinHandle<T> {
+impl<T> ScopedJoinHandle<'_, T> {
     pub fn join(self) -> Result<T> {
-        self.join.wait()
+        self.join.wait()?;
+        Ok(Arc::try_unwrap(self.cell).unwrap().into_inner().unwrap())
     }
 }
