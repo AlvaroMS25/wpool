@@ -33,9 +33,7 @@ impl<'scope> Scope<'scope> {
         };
 
         ScopedJoinHandle {
-            join: {
-                self.handle.spawn(transmuted)
-            },
+            join: self.handle.spawn(transmuted),
             scope: self,
             cell
         }
