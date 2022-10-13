@@ -38,8 +38,8 @@ impl<T> Future for JoinHandle<T> {
 }
 
 pub struct ScopedHandle<'scope, T> {
-    join: JoinHandle<T>,
-    _marker: PhantomData<&'scope ()>
+    pub(crate) join: JoinHandle<T>,
+    pub(crate) _marker: PhantomData<&'scope ()>
 }
 
 impl<T> ScopedHandle<T> {
