@@ -9,7 +9,7 @@ use crate::Runnable;
 
 pub struct Scope<'scope> {
     handle: &'scope Handle,
-    running_tasks: AtomicUsize,
+    running_tasks: Arc<AtomicUsize>,
 }
 
 impl<'scope> Scope<'scope> {
