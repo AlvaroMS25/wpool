@@ -1,6 +1,7 @@
 use crate::wait::Waiter;
 use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
+use std::marker::PhantomData;
 
 
 /// A handle used to retrieve the output of a task.
@@ -33,5 +34,16 @@ impl<T> Future for JoinHandle<T> {
             self.inner.set_waker(cx);
             Poll::Pending
         }
+    }
+}
+
+pub struct ScopedHandle<'scope, T> {
+    join: JoinHandle<T>,
+    _marker: PhantomData<&'scope ()>
+}
+
+impl<T> ScopedHandle<T> {
+    pub fn join(self) -> Result<T> {
+        self.join.wait()
     }
 }
