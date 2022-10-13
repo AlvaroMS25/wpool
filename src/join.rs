@@ -2,6 +2,7 @@ use crate::wait::Waiter;
 use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
 use std::marker::PhantomData;
+use crate::scope::Scope;
 
 
 /// A handle used to retrieve the output of a task.
@@ -37,12 +38,12 @@ impl<T> Future for JoinHandle<T> {
     }
 }
 
-pub struct ScopedHandle<'scope, T> {
+pub struct ScopedJoinHandle<'scope, T> {
     pub(crate) join: JoinHandle<T>,
-    pub(crate) _marker: PhantomData<&'scope ()>
+    pub(crate) scope: &'scope Scope<'scope>
 }
 
-impl<T> ScopedHandle<T> {
+impl<T> ScopedJoinHandle<T> {
     pub fn join(self) -> Result<T> {
         self.join.wait()
     }
