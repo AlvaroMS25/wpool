@@ -62,11 +62,14 @@ impl<T> Waiter<T> {
     }
 
     pub fn wait(&mut self) -> Result<T> {
+        self.wait_with(Parker::new())
+    }
+
+    pub fn wait_with(&mut self, parker: Parker) -> Result<T> {
         if let Some(item) = self.try_get() {
             return item;
         }
 
-        let parker = Parker::new();
         self.inner().map(|inner| {
             inner.notifier = Some(Notifier::Unparker(parker.unparker().clone()));
         });

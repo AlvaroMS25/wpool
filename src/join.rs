@@ -3,6 +3,7 @@ use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
 use std::marker::PhantomData;
 use std::sync::Arc;
+use crossbeam_utils::sync::Parker;
 use parking_lot::Mutex;
 
 
@@ -23,6 +24,10 @@ impl<T> JoinHandle<T> {
     /// Waits for the result synchronously.
     pub fn wait(mut self) -> Result<T> {
         self.inner.wait()
+    }
+
+    pub(crate) fn wait_with(mut self, parker: Parker) -> Result<T> {
+        self.inner.wait_with(parker)
     }
 }
 
