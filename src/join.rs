@@ -1,9 +1,9 @@
 use crate::wait::Waiter;
 use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
-use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use parking_lot::Mutex;
 
 
 /// A handle used to retrieve the output of a task.
@@ -41,13 +41,20 @@ impl<T> Future for JoinHandle<T> {
 
 pub struct ScopedJoinHandle<'scope, T> {
     pub(crate) join: JoinHandle<()>,
-    pub(crate) cell: Arc<UnsafeCell<Option<T>>>,
+    pub(crate) mutex: Arc<Mutex<Option<T>>>,
     pub(crate) _marker: PhantomData<&'scope T>
 }
 
 impl<T> ScopedJoinHandle<'_, T> {
     pub fn join(self) -> Result<T> {
         self.join.wait()?;
-        Ok(Arc::try_unwrap(self.cell).unwrap().into_inner().unwrap())
+        Ok(match Arc::try_unwrap(self.mutex) {
+            // The output has already been put inside the option by the task, so it can't panic
+            // when unwrapping.
+            Ok(mutex) => mutex.into_inner().unwrap(),
+            // By now, the other task holding the Arc has exited and we are the only ones holding
+            // it, so unwrapping it cannot fail.
+            Err(_) => unreachable!()
+        })
     }
 }

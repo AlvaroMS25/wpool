@@ -1,8 +1,8 @@
-use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use crossbeam_utils::sync::Unparker;
+use parking_lot::Mutex;
 use crate::handle::Handle;
 use crate::join::ScopedJoinHandle;
 
@@ -13,7 +13,7 @@ pub struct Scope<'scope> {
 
 pub struct ScopeInner {
     pub running_tasks: AtomicUsize,
-    pub unparker: Unparker,
+    unparker: Unparker
 }
 
 impl ScopeInner {
@@ -37,7 +37,7 @@ impl<'scope> Scope<'scope> {
             handle,
             inner: Arc::new(ScopeInner {
                 running_tasks: AtomicUsize::new(0),
-                unparker,
+                unparker
             }),
         }
     }
@@ -47,17 +47,15 @@ impl<'scope> Scope<'scope> {
         F: FnOnce() -> R + Send + 'scope,
         R: Send + 'scope
     {
-        let cell = Arc::new(UnsafeCell::new(None));
-        let cell_clone = Arc::clone(&cell);
+        let mutex = Arc::new(Mutex::new(None));
+        let mutex_clone = Arc::clone(&mutex);
         let inner = Arc::clone(&self.inner);
 
         self.inner.increment_task_number();
 
         let boxed = Box::new(move || {
             let result = fun();
-            unsafe {
-                *&mut *cell_clone.get() = Some(result);
-            }
+            *mutex_clone.lock() = Some(result);
             inner.decrement_task_number();
         }) as Box<dyn FnOnce() + 'scope>;
 
@@ -67,7 +65,7 @@ impl<'scope> Scope<'scope> {
 
         ScopedJoinHandle {
             join: self.handle.spawn(transmuted),
-            cell,
+            mutex,
             _marker: PhantomData
         }
     }

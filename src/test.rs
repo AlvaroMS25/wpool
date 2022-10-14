@@ -149,20 +149,26 @@ fn scoped() {
     let mut num = 0;
     let mut string = String::new();
 
-    let res = handle.scoped(|scope| {
+    let res: crate::error::Result<(i32, i32)> = handle.scoped(|scope| {
         scope.spawn(|| {
             num+=165;
             println!("First");
         });
 
         scope.spawn(|| {
-            thread::sleep(Duration::from_secs(10));
-            32
-        });
-
-        scope.spawn(|| {
             string = format!("Hello world");
         });
+
+        /*let f = scope.spawn(|| {
+            thread::sleep(Duration::from_secs(10));
+            32
+        }).join()?;*/
+
+        /*let s = scope.spawn(|| {
+            2
+        }).join()?;*/
+
+        Ok((1, 1))
     });
 
     println!("Values -> {:?}\nReturn -> {:?}", (num, string), res);
