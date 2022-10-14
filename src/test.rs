@@ -141,3 +141,29 @@ fn drop_context_guard() {
         crate::spawn_detached(|| {});
     }).join().unwrap();
 }
+
+#[test]
+fn scoped() {
+    use std::{thread, time::Duration};
+    let handle = WorkerPoolBuilder::new().build_owned().unwrap();
+    let mut num = 0;
+    let mut string = String::new();
+
+    let res = handle.scoped(|scope| {
+        scope.spawn(|| {
+            num+=165;
+            println!("First");
+        });
+
+        scope.spawn(|| {
+            thread::sleep(Duration::from_secs(10));
+            32
+        });
+
+        scope.spawn(|| {
+            string = format!("Hello world");
+        });
+    });
+
+    println!("Values -> {:?}\nReturn -> {:?}", (num, string), res);
+}
