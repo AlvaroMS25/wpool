@@ -4,7 +4,6 @@ use std::{future::Future, pin::Pin, task::{Context, Poll}};
 use std::cell::UnsafeCell;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::scope::Scope;
 
 
 /// A handle used to retrieve the output of a task.
@@ -42,8 +41,8 @@ impl<T> Future for JoinHandle<T> {
 
 pub struct ScopedJoinHandle<'scope, T> {
     pub(crate) join: JoinHandle<()>,
-    pub(crate) scope: &'scope Scope<'scope>,
-    pub(crate) cell: Arc<UnsafeCell<Option<T>>>
+    pub(crate) cell: Arc<UnsafeCell<Option<T>>>,
+    pub(crate) _marker: PhantomData<&'scope T>
 }
 
 impl<T> ScopedJoinHandle<'_, T> {

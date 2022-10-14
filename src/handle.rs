@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
+use crossbeam_utils::sync::Parker;
 use crate::core::Core;
 use crate::{JoinHandle, Runnable};
 use crate::periodic::PeriodicTask;
+use crate::scope::Scope;
 use crate::sync::Task;
 use crate::wait::{Inner, Waiter};
 
@@ -61,6 +64,21 @@ impl Handle {
     {
         let task = PeriodicTask::new(self.clone(), task, every, times);
         self.core.schedule_periodical(task);
+    }
+
+    pub fn scoped<'scope, F, R>(&'scope self, fun: F) -> R
+    where
+        F: for<'a> FnOnce(&'a Scope<'scope>) -> R
+    {
+        let parker = Parker::new();
+        let scope = Scope::new(self, parker.unparker().clone());
+        let result = fun(&scope);
+
+        while scope.inner.running_tasks.load(Ordering::Acquire) != 0 {
+            parker.park();
+        }
+
+        result
     }
 
     /// Shuts down the pool, waiting for all threads to exit.
