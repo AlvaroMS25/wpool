@@ -6,9 +6,10 @@ use parking_lot::Mutex;
 use crate::handle::Handle;
 use crate::join::ScopedJoinHandle;
 
-pub struct Scope<'scope> {
+pub struct Scope<'scope, 'env: 'scope> {
     pub(crate) handle: &'scope Handle,
     pub(crate) inner: Arc<ScopeInner>,
+    _marker: PhantomData<&'env ()>
 }
 
 pub struct ScopeInner {
@@ -31,7 +32,7 @@ impl ScopeInner {
     }
 }
 
-impl<'scope> Scope<'scope> {
+impl<'scope> Scope<'scope, '_> {
     pub fn new(handle: &'scope Handle, unparker: Unparker) -> Self {
         Self {
             handle,
@@ -39,6 +40,7 @@ impl<'scope> Scope<'scope> {
                 running_tasks: AtomicUsize::new(0),
                 unparker
             }),
+            _marker: PhantomData
         }
     }
 

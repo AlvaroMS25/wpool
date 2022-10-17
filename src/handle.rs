@@ -66,9 +66,9 @@ impl Handle {
         self.core.schedule_periodical(task);
     }
 
-    pub fn scoped<'scope, F, R>(&'scope self, fun: F) -> R
+    pub fn scoped<'scope, 'env: 'scope, F, R>(&'scope self, fun: F) -> R
     where
-        F: for<'a> FnOnce(&'a Scope<'scope>) -> R
+        F: for<'a> FnOnce(&'a Scope<'scope, 'env>) -> R
     {
         let parker = Parker::new();
         let scope = Scope::new(self, parker.unparker().clone());
