@@ -25,10 +25,6 @@ impl<T> JoinHandle<T> {
     pub fn wait(mut self) -> Result<T> {
         self.inner.wait()
     }
-
-    pub(crate) fn wait_with(mut self, parker: Parker) -> Result<T> {
-        self.inner.wait_with(parker)
-    }
 }
 
 impl<T> Future for JoinHandle<T> {
