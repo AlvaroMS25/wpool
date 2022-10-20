@@ -1,4 +1,5 @@
 use crate::builder::WorkerPoolBuilder;
+use crate::handle::Handle;
 use super::*;
 
 #[test]
@@ -144,32 +145,48 @@ fn drop_context_guard() {
 
 #[test]
 fn scoped() {
-    use std::{thread, time::Duration};
     let handle = WorkerPoolBuilder::new().build_owned().unwrap();
+    _scoped(handle);
+}
+
+fn _scoped(handle: Handle) {
+    #[allow(unused_imports)]
+    use std::{thread, time::Duration};
     let mut num = 0;
     let mut string = String::new();
 
-    let res: crate::error::Result<(i32, i32)> = handle.scoped(|scope| {
+    let res: crate::error::Result<()> = handle.scoped(|scope| {
         scope.spawn(|| {
             num+=165;
-            println!("First");
         });
 
         scope.spawn(|| {
             string = format!("Hello world");
         });
 
-        /*let f = scope.spawn(|| {
-            thread::sleep(Duration::from_secs(10));
+        /*let _ = scope.spawn(|| {
+            2
+        }).join()?;
+
+        let _ = scope.spawn(|| {
+            //thread::sleep(Duration::from_secs(10));
             32
         }).join()?;*/
 
-        /*let s = scope.spawn(|| {
-            2
-        }).join()?;*/
-
-        Ok((1, 1))
+        Ok(())
     });
 
     println!("Values -> {:?}\nReturn -> {:?}", (num, string), res);
+}
+
+#[test]
+fn multiple_scopes() {
+    let handle = WorkerPoolBuilder::new()
+        .threads(2000)
+        .before_task(|| println!("Starting task"))
+        .build().unwrap();
+
+    for _ in 0..1000000 {
+        _scoped(handle.clone());
+    }
 }

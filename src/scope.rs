@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use crossbeam_utils::sync::Unparker;
+use crossbeam_utils::sync::{Parker, Unparker};
 use parking_lot::Mutex;
 use crate::handle::Handle;
 use crate::join::ScopedJoinHandle;
@@ -9,6 +9,7 @@ use crate::join::ScopedJoinHandle;
 pub struct Scope<'scope, 'env: 'scope> {
     pub(crate) handle: &'scope Handle,
     pub(crate) inner: Arc<ScopeInner>,
+    pub(crate) parker: Parker,
     _marker: PhantomData<&'env ()>
 }
 
@@ -32,19 +33,21 @@ impl ScopeInner {
     }
 }
 
-impl<'scope> Scope<'scope, '_> {
-    pub fn new(handle: &'scope Handle, unparker: Unparker) -> Self {
+impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
+    pub fn new(handle: &'scope Handle) -> Self {
+        let parker = Parker::new();
         Self {
             handle,
             inner: Arc::new(ScopeInner {
                 running_tasks: AtomicUsize::new(0),
-                unparker
+                unparker: parker.unparker().clone()
             }),
+            parker,
             _marker: PhantomData
         }
     }
 
-    pub fn spawn<F, R>(&'scope self, fun: F) -> ScopedJoinHandle<'scope, R>
+    pub fn spawn<F, R>(&'scope self, fun: F) -> ScopedJoinHandle<'scope, 'env, R>
     where
         F: FnOnce() -> R + Send + 'scope,
         R: Send + 'scope
@@ -66,9 +69,15 @@ impl<'scope> Scope<'scope, '_> {
         };
 
         ScopedJoinHandle {
-            join: self.handle.spawn(transmuted),
+            join: Some(self.handle.spawn(transmuted)),
             mutex,
             _marker: PhantomData
+        }
+    }
+
+    pub(crate) fn wait(&self) {
+        while self.inner.running_tasks.load(Ordering::Acquire) != 0 {
+            self.parker.park();
         }
     }
 }

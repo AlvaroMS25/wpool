@@ -3,7 +3,6 @@ use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crossbeam_utils::sync::Parker;
 use parking_lot::Mutex;
 
 
@@ -40,15 +39,15 @@ impl<T> Future for JoinHandle<T> {
     }
 }
 
-pub struct ScopedJoinHandle<'scope, T> {
-    pub(crate) join: JoinHandle<()>,
+pub struct ScopedJoinHandle<'scope, 'env, T> {
+    pub(crate) join: Option<JoinHandle<()>>,
     pub(crate) mutex: Arc<Mutex<Option<T>>>,
-    pub(crate) _marker: PhantomData<&'scope T>
+    pub(crate) _marker: PhantomData<&'scope &'env ()>
 }
 
-impl<T> ScopedJoinHandle<'_, T> {
+impl<T> ScopedJoinHandle<'_, '_, T> {
     pub fn join(self) -> Result<T> {
-        self.join.wait()?;
+        self.join.unwrap().wait()?;
         Ok(match Arc::try_unwrap(self.mutex) {
             // The output has already been put inside the option by the task, so it can't panic
             // when unwrapping.
