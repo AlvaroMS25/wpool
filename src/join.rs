@@ -3,6 +3,7 @@ use crate::error::Result;
 use std::{future::Future, pin::Pin, task::{Context, Poll}};
 use std::marker::PhantomData;
 use std::sync::Arc;
+use crossbeam_queue::SegQueue;
 use parking_lot::Mutex;
 
 
@@ -41,14 +42,15 @@ impl<T> Future for JoinHandle<T> {
 
 pub struct ScopedJoinHandle<'scope, 'env, T> {
     pub(crate) join: Option<JoinHandle<()>>,
-    pub(crate) mutex: Arc<Mutex<Option<T>>>,
+    pub(crate) mutex: Option<Arc<Mutex<Option<T>>>>,
+    pub(crate) queue: &'scope SegQueue<JoinHandle<()>>,
     pub(crate) _marker: PhantomData<&'scope &'env ()>
 }
 
 impl<T> ScopedJoinHandle<'_, '_, T> {
-    pub fn join(self) -> Result<T> {
+    pub fn join(mut self) -> Result<T> {
         self.join.unwrap().wait()?;
-        Ok(match Arc::try_unwrap(self.mutex) {
+        Ok(match Arc::try_unwrap(self.mutex.take().unwrap()) {
             // The output has already been put inside the option by the task, so it can't panic
             // when unwrapping.
             Ok(mutex) => mutex.into_inner().unwrap(),
@@ -58,3 +60,10 @@ impl<T> ScopedJoinHandle<'_, '_, T> {
         })
     }
 }
+
+impl<T> Drop for ScopedJoinHandle<'_, '_, T> {
+    fn drop(&mut self) {
+        self.queue.push(self.join.unwrap());
+    }
+}
+

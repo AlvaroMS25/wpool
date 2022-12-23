@@ -164,14 +164,14 @@ fn _scoped(handle: Handle) {
             string = format!("Hello world");
         });
 
-        /*let _ = scope.spawn(|| {
+        let _ = scope.spawn(|| {
             2
         }).join()?;
 
         let _ = scope.spawn(|| {
-            //thread::sleep(Duration::from_secs(10));
+            thread::sleep(Duration::from_secs(2));
             32
-        }).join()?;*/
+        }).join()?;
 
         Ok(())
     });

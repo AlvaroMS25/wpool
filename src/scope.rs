@@ -1,10 +1,12 @@
 use std::marker::PhantomData;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crossbeam_queue::SegQueue;
 use crossbeam_utils::sync::{Parker, Unparker};
 use parking_lot::Mutex;
 use crate::handle::Handle;
 use crate::join::ScopedJoinHandle;
+use crate::JoinHandle;
 
 pub struct Scope<'scope, 'env: 'scope> {
     pub(crate) handle: &'scope Handle,
@@ -15,6 +17,7 @@ pub struct Scope<'scope, 'env: 'scope> {
 
 pub struct ScopeInner {
     pub running_tasks: AtomicUsize,
+    dropped_handles: SegQueue<JoinHandle<()>>,
     unparker: Unparker
 }
 
@@ -40,6 +43,7 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
             handle,
             inner: Arc::new(ScopeInner {
                 running_tasks: AtomicUsize::new(0),
+                dropped_handles: SegQueue::new(),
                 unparker: parker.unparker().clone()
             }),
             parker,
@@ -70,7 +74,7 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
 
         ScopedJoinHandle {
             join: Some(self.handle.spawn(transmuted)),
-            mutex,
+            mutex: Some(mutex),
             _marker: PhantomData
         }
     }
