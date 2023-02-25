@@ -1,4 +1,7 @@
+use std::thread::{sleep};
+use std::time::Duration;
 use crate::builder::WorkerPoolBuilder;
+use crate::driver::Driver;
 use crate::handle::Handle;
 use super::*;
 
@@ -144,14 +147,47 @@ fn drop_context_guard() {
 }
 
 #[test]
-fn scoped() {
+fn scope() {
+    let handle = WorkerPoolBuilder::new().threads(4).build().unwrap();
+
+    handle.scoped(|scope| {
+        scope.spawn(|| {
+            println!("Sleeping 3 seconds");
+            sleep(Duration::from_secs(3));
+            println!("Finished");
+        });
+
+        scope.spawn(|| {
+            println!("Sleeping 6 seconds");
+            sleep(Duration::from_secs(6));
+            println!("Finished");
+        });
+
+        scope.spawn(|| {
+            println!("Sleeping 9 seconds");
+            sleep(Duration::from_secs(9));
+            println!("Finished");
+        });
+
+        scope.spawn(|| {
+            println!("Sleeping 15 seconds");
+            sleep(Duration::from_secs(15));
+            println!("Finished");
+        });
+
+        println!("Ended scope spawns");
+    });
+
+    println!("Scope exited");
+}
+
+#[test]
+fn scoped_wait() {
     let handle = WorkerPoolBuilder::new().build_owned().unwrap();
     _scoped(handle);
 }
 
 fn _scoped(handle: Handle) {
-    #[allow(unused_imports)]
-    use std::{thread, time::Duration};
     let mut num = 0;
     let mut string = String::new();
 
@@ -169,7 +205,7 @@ fn _scoped(handle: Handle) {
         }).join()?;
 
         let _ = scope.spawn(|| {
-            thread::sleep(Duration::from_secs(2));
+            sleep(Duration::from_secs(2));
             32
         }).join()?;
 
@@ -182,11 +218,27 @@ fn _scoped(handle: Handle) {
 #[test]
 fn multiple_scopes() {
     let handle = WorkerPoolBuilder::new()
-        .threads(2000)
+        .threads(5000)
         .before_task(|| println!("Starting task"))
         .build().unwrap();
-
-    for _ in 0..1000000 {
-        _scoped(handle.clone());
+    let mut handles = Vec::new();
+    for _ in 0..1000 {
+        handles.push(handle.spawn(move || {
+            println!("Starting scope");
+            let handle = Handle::current();
+            _scoped(handle.clone());
+            println!("Scope ended");
+        }));
     }
+
+    handles.into_iter().map(JoinHandle::wait).collect::<Result<Vec<()>, _>>().unwrap();
+}
+
+#[test]
+fn parallel_multiple() {
+    let _ = (0..5000).map(|_| std::thread::spawn(multiple_scopes))
+        .collect::<Vec<_>>()
+        .into_iter()
+        .map(|handle| handle.join())
+        .collect::<Vec<_>>();
 }

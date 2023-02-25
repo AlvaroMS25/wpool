@@ -75,11 +75,16 @@ impl<'scope, 'env: 'scope> Scope<'scope, 'env> {
         ScopedJoinHandle {
             join: Some(self.handle.spawn(transmuted)),
             mutex: Some(mutex),
+            queue: &self.inner.dropped_handles,
             _marker: PhantomData
         }
     }
 
-    pub(crate) fn wait(&self) {
+    pub(crate) fn wait(self) {
+        while let Some(handle) = self.inner.dropped_handles.pop() {
+            let _ = handle.wait();
+        }
+
         while self.inner.running_tasks.load(Ordering::Acquire) != 0 {
             self.parker.park();
         }

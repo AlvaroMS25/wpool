@@ -49,7 +49,7 @@ pub struct ScopedJoinHandle<'scope, 'env, T> {
 
 impl<T> ScopedJoinHandle<'_, '_, T> {
     pub fn join(mut self) -> Result<T> {
-        self.join.unwrap().wait()?;
+        self.join.take().unwrap().wait()?;
         Ok(match Arc::try_unwrap(self.mutex.take().unwrap()) {
             // The output has already been put inside the option by the task, so it can't panic
             // when unwrapping.
@@ -63,7 +63,9 @@ impl<T> ScopedJoinHandle<'_, '_, T> {
 
 impl<T> Drop for ScopedJoinHandle<'_, '_, T> {
     fn drop(&mut self) {
-        self.queue.push(self.join.unwrap());
+        if let Some(inner) = self.join.take() {
+            self.queue.push(inner);
+        }
     }
 }
 
