@@ -1,3 +1,5 @@
+use std::cell::UnsafeCell;
+use std::ops::Deref;
 use std::thread::JoinHandle;
 use crate::driver::{Driver, Either};
 use crate::hook::Hooks;
@@ -6,9 +8,11 @@ use parking_lot::{Condvar, Mutex};
 use crate::periodic::PeriodicTask;
 use crate::sync::Task;
 
+pub struct Core(UnsafeCell<CoreInner>);
+
 /// The core shared among all worker threads and handles.
 #[derive(Default)]
-pub struct Core {
+pub struct CoreInner {
     /// The queue of tasks of the pool.
     pub driver: Driver,
     /// The hooks the pool has.
@@ -26,6 +30,24 @@ pub struct Core {
 }
 
 impl Core {
+    pub fn new(hooks: Hooks) -> Self {
+        Self(UnsafeCell::new(CoreInner::new(hooks)))
+    }
+
+    pub fn inner_mut(&self) -> &mut <Self as Deref>::Target {
+        unsafe { &mut *self.0.get() }
+    }
+}
+
+impl Deref for Core {
+    type Target = CoreInner;
+
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.0.get() }
+    }
+}
+
+impl CoreInner {
     pub fn new(hooks: Hooks) -> Self {
         Self {
             hooks,
@@ -54,19 +76,13 @@ impl Core {
         }
     }
 
-    pub fn shutdown(&self) {
+    pub fn shutdown(&mut self) {
         self.assert_running();
         self.driver.clear();
         crate::context::clear();
         let mut lock = self.handles.lock();
 
-        // SAFETY: The Core struct cannot be accessed directly, to use this method a Handle
-        // instance must be consumed, and since we assert the pool is running before doing anything
-        // there is no possibility of a data race here.
-        unsafe {
-            let this = &mut *(self as *const Self as *mut Self);
-            this.exit = true;
-        }
+        self.exit = true;
 
         self.condvar.notify_all();
 

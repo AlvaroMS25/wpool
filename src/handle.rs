@@ -78,7 +78,7 @@ impl Handle {
 
     /// Shuts down the pool, waiting for all threads to exit.
     pub fn shutdown(self) {
-        self.core.shutdown();
+        self.core.inner_mut().shutdown();
     }
 
     /// Enters the context of the pool the handle belongs to, thus allowing to use directly
