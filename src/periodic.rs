@@ -35,6 +35,10 @@ impl PeriodicTask {
     }
 
     pub fn run(mut self) {
+        if self.inner.as_ref().map(|i| i.state.is_aborted()).unwrap_or(false) {
+            return;
+        }
+
         self.fun.call();
         self.times.as_mut().map(|t| *t = *t-1);
 
