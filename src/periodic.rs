@@ -1,4 +1,3 @@
-use std::ptr::NonNull;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tiny_fn::tiny_fn;
@@ -63,7 +62,7 @@ impl PeriodicTask {
 
 impl Drop for PeriodicTask {
     fn drop(&mut self) {
-        if self.inner.as_ref().map(|i| unsafe { i.drop_end() }).unwrap_or(false) {
+        if self.inner.as_ref().map(|i| i.drop_end()).unwrap_or(false) {
             unsafe { let _ = Box::from_raw(self.inner.take().unwrap().0.as_ptr()); }
         }
     }

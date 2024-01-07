@@ -62,7 +62,7 @@ impl Task {
 
 impl Drop for Task {
     fn drop(&mut self) {
-        if self.inner.as_ref().map(|i| unsafe { i.drop_end() }).unwrap_or(false) {
+        if self.inner.as_ref().map(|i| i.drop_end()).unwrap_or(false) {
             unsafe { let _ = Box::from_raw(self.inner.take().unwrap().as_ptr().as_ptr()); }
         }
     }

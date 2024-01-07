@@ -27,6 +27,7 @@ impl<T> Shared<T> {
         Self(NonNull::new(Inner::new()).unwrap())
     }
 
+    #[allow(unused)]
     pub fn inner_mut(&self) -> &mut <Self as Deref>::Target {
         unsafe { &mut *self.0.as_ptr() }
     }
