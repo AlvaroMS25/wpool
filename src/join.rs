@@ -29,6 +29,18 @@ impl<T> JoinHandle<T> {
     pub fn abort(&self) {
         self.inner.abort();
     }
+
+    pub fn is_aborted(&self) -> bool {
+        self.inner.inner.state.is_aborted()
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.inner.inner.state.is_running()
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.inner.inner.state.is_finished()
+    }
 }
 
 impl<T> Future for JoinHandle<T> {
@@ -80,5 +92,17 @@ pub struct PeriodicJoinHandle {
 impl PeriodicJoinHandle {
     pub fn abort(&self) {
         self.inner.abort()
+    }
+
+    pub fn is_aborted(&self) -> bool {
+        self.inner.inner.state.is_aborted()
+    }
+
+    pub fn is_running(&self) -> bool {
+        self.inner.inner.state.is_running()
+    }
+
+    pub fn is_finished(&self) -> bool {
+        self.inner.inner.state.is_finished()
     }
 }
