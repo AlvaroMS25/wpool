@@ -49,7 +49,7 @@ impl PeriodicTask {
     }
 
     pub fn reschedule(self) {
-        if self.inner.as_ref().map(|i| unsafe { i.state.is_aborted() }).unwrap_or(false) {
+        if self.inner.as_ref().map(|i| i.state.is_aborted()).unwrap_or(false) {
             return; // if aborted, dont reschedule
         }
         // SAFETY: We already hold an Arc, so the pointer must be valid and safe to dereference.
