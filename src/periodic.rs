@@ -1,7 +1,9 @@
+use std::ptr::NonNull;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tiny_fn::tiny_fn;
 use crate::handle::Handle;
+use crate::wait::Shared;
 
 tiny_fn! {
     struct PeriodicFn = Fn();
@@ -12,11 +14,12 @@ pub struct PeriodicTask {
     fun: PeriodicFn<'static>,
     every: Duration,
     next: Instant,
-    times: Option<usize>
+    times: Option<usize>,
+    inner: Option<Shared<()>>
 }
 
 impl PeriodicTask {
-    pub fn new<F>(handle: Handle, fun: F, every: Duration, times: Option<usize>) -> Self
+    pub fn new<F>(handle: Handle, fun: F, every: Duration, times: Option<usize>, inner: Option<Shared<()>>) -> Self
     where
         F: Fn() + Send + 'static
     {
@@ -26,7 +29,8 @@ impl PeriodicTask {
             fun: PeriodicFn::new(fun),
             every,
             next,
-            times
+            times,
+            inner
         }
     }
 
@@ -41,11 +45,22 @@ impl PeriodicTask {
     }
 
     pub fn reschedule(self) {
+        if self.inner.as_ref().map(|i| unsafe { i.state.is_aborted() }).unwrap_or(false) {
+            return; // if aborted, dont reschedule
+        }
         // SAFETY: We already hold an Arc, so the pointer must be valid and safe to dereference.
         unsafe { (&*Arc::as_ptr(&self.handle.core)).schedule_periodical(self); }
     }
 
     pub fn can_run(&self) -> bool {
         Instant::now() >= self.next
+    }
+}
+
+impl Drop for PeriodicTask {
+    fn drop(&mut self) {
+        if self.inner.as_ref().map(|i| unsafe { i.drop_end() }).unwrap_or(false) {
+            unsafe { let _ = Box::from_raw(self.inner.take().unwrap().0.as_ptr()); }
+        }
     }
 }

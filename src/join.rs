@@ -25,6 +25,10 @@ impl<T> JoinHandle<T> {
     pub fn wait(mut self) -> Result<T> {
         self.inner.wait()
     }
+
+    pub fn abort(&self) {
+        self.inner.abort();
+    }
 }
 
 impl<T> Future for JoinHandle<T> {
@@ -69,3 +73,12 @@ impl<T> Drop for ScopedJoinHandle<'_, '_, T> {
     }
 }
 
+pub struct PeriodicJoinHandle {
+    pub(crate) inner: Waiter<()>
+}
+
+impl PeriodicJoinHandle {
+    pub fn abort(&self) {
+        self.inner.abort()
+    }
+}

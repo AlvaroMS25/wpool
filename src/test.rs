@@ -1,5 +1,6 @@
 use std::thread::{sleep};
 use std::time::Duration;
+use parking_lot::Mutex;
 use crate::builder::WorkerPoolBuilder;
 use crate::driver::Driver;
 use crate::handle::Handle;
@@ -241,4 +242,76 @@ fn parallel_multiple() {
         .into_iter()
         .map(|handle| handle.join())
         .collect::<Vec<_>>();
+}
+
+#[test]
+fn drop_periodical() {
+    WorkerPoolBuilder::new()
+        .build_owned().unwrap();
+
+    let mut i = Mutex::new(0);
+
+    let _handle = spawn_periodic(move || {
+        println!("I: {}", i.lock());
+        *i.lock() += 1;
+
+        if *i.lock() == 2 {
+            println!("End task");
+        }
+    }, Duration::from_millis(1), Some(2));
+
+    println!("Sleep");
+    sleep(Duration::from_secs(5));
+
+    println!("Drop handle");
+}
+
+#[test]
+fn drop_periodical_handle() {
+    WorkerPoolBuilder::new()
+        .build_owned().unwrap();
+
+    let mut i = Mutex::new(0);
+
+    let handle = spawn_periodic(move || {
+        println!("I: {}", i.lock());
+        *i.lock() += 1;
+
+        if *i.lock() == 2 {
+            println!("End task");
+        }
+    }, Duration::from_millis(1), Some(2));
+
+    drop(handle);
+    println!("Drop handle");
+
+    println!("Sleep");
+    sleep(Duration::from_secs(5));
+    println!("Finish sleeping");
+}
+
+#[test]
+fn drop_normal() {
+    WorkerPoolBuilder::new()
+        .build_owned().unwrap();
+
+    let handle = spawn(|| println!("Done"));
+
+    sleep(Duration::from_secs(2));
+    drop(handle);
+}
+
+#[test]
+fn drop_normal_handle() {
+    WorkerPoolBuilder::new()
+        .build_owned().unwrap();
+
+    let handle = spawn(|| {
+        sleep(Duration::from_secs(3));
+        println!("Done");
+    });
+
+    drop(handle);
+    sleep(Duration::from_secs(5));
+    println!("Done sleep");
 }

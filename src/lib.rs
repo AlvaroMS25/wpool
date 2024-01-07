@@ -18,6 +18,7 @@ mod worker;
 
 #[cfg(test)]
 mod test;
+mod state;
 
 pub mod prelude {
     pub use crate::{
@@ -30,6 +31,7 @@ pub mod prelude {
 use std::time::Duration;
 use join::JoinHandle;
 use runnable::Runnable;
+use crate::join::PeriodicJoinHandle;
 
 /// Spawns a new task into the pool, returning a [`handle`] that can be used to retrieve the output.
 ///
@@ -54,9 +56,16 @@ where
 
 /// Spawns a new task that will be executed periodically by the thread pool every specified time
 /// and the specified amount of times.
-pub fn spawn_periodic<T>(task: T, every: Duration, times: Option<usize>)
+pub fn spawn_periodic<T>(task: T, every: Duration, times: Option<usize>) -> PeriodicJoinHandle
 where
     T: Fn() + Send + 'static
 {
-    context::get().spawn_periodic(task, every, times);
+    context::get().spawn_periodic(task, every, times)
+}
+
+pub fn spawn_periodic_detached<T>(task: T, every: Duration, times: Option<usize>)
+where
+    T: Fn() + Send + 'static
+{
+    context::get().spawn_periodic_detached(task, every, times)
 }

@@ -1,12 +1,14 @@
 use std::marker::PhantomData;
+use std::ptr::NonNull;
 use std::sync::Arc;
 use std::time::Duration;
 use crate::core::Core;
 use crate::{JoinHandle, Runnable};
+use crate::join::PeriodicJoinHandle;
 use crate::periodic::PeriodicTask;
 use crate::scope::Scope;
 use crate::sync::Task;
-use crate::wait::{Inner, Waiter};
+use crate::wait::{Shared, Waiter};
 
 /// Handle used to operate the pool.
 #[derive(Clone)]
@@ -34,8 +36,8 @@ impl Handle {
     where
         R: Runnable
     {
-        let inner = Inner::<R::Output>::new();
-        let task = Task::new(runnable, Some(inner));
+        let inner = Shared::<R::Output>::new();
+        let task = Task::new(runnable, Some(inner.clone()));
         self.core.schedule(task);
         JoinHandle {
             inner: Waiter::new(inner)
@@ -56,11 +58,23 @@ impl Handle {
 
     /// Spawns a new task that will be executed periodically by the thread pool every specified time
     /// and the specified amount of times.
-    pub fn spawn_periodic<T>(&self, task: T, every: Duration, times: Option<usize>)
+    pub fn spawn_periodic<T>(&self, task: T, every: Duration, times: Option<usize>) -> PeriodicJoinHandle
     where
         T: Fn() + Send + 'static
     {
-        let task = PeriodicTask::new(self.clone(), task, every, times);
+        let inner = Shared::new();
+        let task = PeriodicTask::new(self.clone(), task, every, times, Some(inner.clone()));
+        self.core.schedule_periodical(task);
+        PeriodicJoinHandle {
+            inner: Waiter::new(inner)
+        }
+    }
+
+    pub fn spawn_periodic_detached<T>(&self, task: T, every: Duration, times: Option<usize>)
+    where
+        T: Fn() + Send + 'static
+    {
+        let task = PeriodicTask::new(self.clone(), task, every, times, None);
         self.core.schedule_periodical(task);
     }
 
